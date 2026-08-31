@@ -1,22 +1,29 @@
 import mongoose from "mongoose";
-
-const ClientSchema = new mongoose.Schema({
+const clientSchema = new mongoose.Schema({
     name:{
         type:String,
+        required:true
+    },
+    email:{
+        type:String,
+        required:true
+    },
+    phoneNumber :{
+        type:String,
+        required:true
+    },
+    password:{
+        type:String,
+        required:true
+    },
+    third:{
+        type:Boolean,
         required:true,
-    },
-    tags:[{
-        type:String
-    }],
-    //need to make a project associated field
-    mclient:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:'Mclient'
-    },
-
+        default:false
+    }
 },{
     timestamps:true
 });
 
-const Client = mongoose.model("Client",ClientSchema);
+const Client = mongoose.model("Client",clientSchema);
 export default Client;
