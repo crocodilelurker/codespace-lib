@@ -14,12 +14,17 @@ const clientSchema = new mongoose.Schema({
     },
     password:{
         type:String,
-        required:true
+        default : ""
     },
     third:{
         type:Boolean,
         required:true,
         default:false
+    },
+    provider : {
+        type : String,
+        enum : ['github','local'],
+        required :true,
     }
 },{
     timestamps:true

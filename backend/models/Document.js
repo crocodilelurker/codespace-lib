@@ -1,6 +1,4 @@
 import mongoose from "mongoose";
-
-
 const docSchema = new mongoose.Schema({
 
     name:{
