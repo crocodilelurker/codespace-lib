@@ -13,7 +13,11 @@ export const signupSchema = z.object({
         password : z.string()
             .min(6,"min 6 length passcode")
             .max(20,"max 20 length passcode")
-            .trim()
+            .trim(),
+        phoneNumber : z.string()
+            .min(10,"min 10 length phone number"
+                .trim()
+            )
     })
 });
 

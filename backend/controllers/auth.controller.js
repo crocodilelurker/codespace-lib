@@ -8,6 +8,7 @@ export const signup = async (req,res) => {
     try 
     {
         const {name, email, phoneNumber, password} = req.body;
+        console.log("signup controller", name, email, phoneNumber, password);
         const hashedPassword = await hashPassword(password);
         const existClient = await getClientByEmailorPhone(email,phoneNumber);
         if(existClient)
@@ -15,7 +16,7 @@ export const signup = async (req,res) => {
             return response(res,400,"Client already exists",null);
         }
         const newClient = await Client.create({
-            name,
+            name:name,
             email,
             password:hashedPassword,
             phoneNumber
@@ -32,7 +33,10 @@ export const signup = async (req,res) => {
         await newClient.save();
         return response(res,201,"Client created successfully",{
             id:newClient._id,
-            name:newClient.name
+            name:newClient.name,
+            email:newClient.email,
+            accessToken,
+            refreshToken
         });
         //we need to create and send jwt access and refresh token as well
     }

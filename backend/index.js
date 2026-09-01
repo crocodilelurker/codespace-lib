@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import rclient from "./config/redis.js";
 import authRoutes from "./routes/auth.routes.js";
+import connectDb from "./config/db.js";
 
 dotenv.config();
 
@@ -12,6 +13,8 @@ const PORT = process.env.PORT || 8001;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+connectDb();
 
 app.use("/api/auth",authRoutes);
 
