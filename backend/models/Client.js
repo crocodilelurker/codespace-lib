@@ -25,6 +25,15 @@ const clientSchema = new mongoose.Schema({
         type : String,
         enum : ['github','local'],
         required :true,
+        default:'local'
+    },
+    refreshToken : {
+        type : String,
+        default: ""
+    },
+    accessToken : {
+        type :String,
+        default : ""
     }
 },{
     timestamps:true
