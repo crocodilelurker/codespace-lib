@@ -2,7 +2,7 @@ import response from "../utils/response.js";
 import { comparePassword, hashPassword } from "../utils/hash.js";
 import Client from "../models/Client.js";
 import { getClientByEmail, getClientByEmailorPhone } from "../services/client.service.js";
-import { generateAccessRefresh } from "../utils/jwt.js";
+import { decodeToken, generateAccessRefresh } from "../utils/jwt.js";
 export const signup = async (req, res) => {
     //we are getting parsed and clean data
     try {
@@ -78,4 +78,42 @@ export const login = async (req, res) => {
         return response(res, 500, "ISE Login", null);
     }
 
+}
+
+export const refresh = async (req, res) => {
+    try {
+        const { token } = req.body;
+        const decoded = await decodeToken(token);
+        if (!decoded || !decoded.id)
+            return response(res, 401, "Expired", null);
+        if (decoded == null) {
+            return response(res, 401, "Refresh Token Expired go to login", null);
+        }
+        const client = await Client.findById(decoded.id);
+        if (!client) {
+            return response(res, 401, "Refresh Token Expired go to login", null);
+        }
+        if (client.refreshToken !== token) {
+            return response(res, 401, "Refresh Token Expired go to login", null);
+        }
+        const payload = {
+            id: client._id,
+            name: client.name,
+            email: client.email
+        }
+        const { accessToken, refreshToken } = await generateAccessRefresh(payload);
+        client.accessToken = accessToken;
+        client.refreshToken = refreshToken;
+        await client.save();
+        return response(res, 200, "Client refreshed successfully", {
+            id: client._id,
+            name: client.name,
+            email: client.email,
+            accessToken,
+            refreshToken
+        });
+    } catch (error) {
+        console.log("error in refresh controller", error);
+        return response(res, 500, "ISE refresh", null);
+    }
 }
