@@ -5,6 +5,10 @@ const docSchema = new mongoose.Schema({
         type:String,
         default:"Untitled"
     },
+    description:{
+        type:String,
+        default:""
+    },// this field cannot be created during doc creation only updated later
     content:{
         type:String,
         default:""
@@ -14,10 +18,16 @@ const docSchema = new mongoose.Schema({
         ref:'Client',
         required:true
     },
-    others:[{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:'Client',
-    }]
+    ownerName : {
+        type :String,
+        ref : 'User',
+        required :true
+    },
+    accessMap : {
+        type : mongoose.Schema.Types.ObjectId,
+        ref : 'AccessMap',
+        //for now required is false
+    }
 },{
     timestamps:true
 });
