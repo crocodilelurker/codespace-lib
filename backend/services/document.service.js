@@ -1,83 +1,68 @@
 import Document from "../models/Document.js";
 
-export const createDoc = (username, docName, userId) => {
-    try
-    {const newDoc = new Document({
-        name :docName,
-        ownerName : username,
-        owner : userId
-    });
-    // we need to create an AccessMap
-    return newDoc;
-}
-catch(error)
-{
-    console.log(error);
-    return null;
-}
-};
-
-export const getDocByUser = (userId) => {
-    try
-    {
-        const docs = Document.find({
-            owner : userId
+export const createDoc = async (username, docName, userId) => {
+    try {
+        const newDoc = new Document({
+            name: docName,
+            ownerName: username,
+            owner: userId
         });
-        return docs;
+        // we need to create an AccessMap
+        await newDoc.save();
+        return newDoc;
     }
-    catch(error)
-    {
+    catch (error) {
         console.log(error);
         return null;
     }
 };
-export const getDocById = (docId) => {
-    try
-    {
-        const doc = Document.findById(docId);
+
+export const getDocByUser = async (userId) => {
+    try {
+        const docs = await Document.find({
+            owner: userId
+        });
+        return docs;
+    }
+    catch (error) {
+        console.log(error);
+        return null;
+    }
+};
+export const getDocById = async (docId) => {
+    try {
+        const doc = await Document.findById(docId);
         return doc;
     }
-    catch(error)
-    {
+    catch (error) {
         console.log(error);
         return null;
     }
 };
 
 export const deleteDoc = async (doc) => {
-    try 
-    {
+    try {
         // we are sure that the doc exists and the user is the owner of the doc
         await doc.deleteOne();
         return true;
     }
-    catch (error)
-    {
+    catch (error) {
         console.log(error);
         return false;
     }
 };
 
 export const updateDoc = async (doc, name, description, content) => {
-    try
-    {
-        if(name)
-        {
-            doc.name = name;
-        }
-        if(description)
-        {
-            doc.description = description;
-        }
-        if(content)
-        {
-            doc.content = content;
-        }
+    try {
+        //from frontend i will send all these 3 for sure 
+        //no need to check
+        doc.name = name;
+        doc.description = description;
+        doc.content = content;
         await doc.save();
         return doc;
     }
-    catch(error)
-    {
+    catch (error) {
         console.log(error);
         return null;
     }

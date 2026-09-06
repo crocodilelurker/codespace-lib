@@ -5,7 +5,7 @@ export const createDocument = async (req,res) => {
     // we need the user id and 
     const { name } = req.body;
     const  user  = req.user;
-    const newDoc = await createDoc(user.username,name,user.id);
+    const newDoc = await createDoc(user.name,name,user.id);
     if(!newDoc)
     {
         return response(res,500, "Error in creating new Doc controller");

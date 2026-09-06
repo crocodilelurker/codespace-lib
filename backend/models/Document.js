@@ -20,7 +20,6 @@ const docSchema = new mongoose.Schema({
     },
     ownerName : {
         type :String,
-        ref : 'User',
         required :true
     },
     accessMap : {
