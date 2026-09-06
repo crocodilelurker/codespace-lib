@@ -8,4 +8,4 @@ export const generateAccessRefresh = async (payload) => {
     const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn : '15m'});
     const refreshToken = jwt.sign(payload, JWT_SECRET, { expiresIn : '7d'});
     return { accessToken , refreshToken};
-}
+};
