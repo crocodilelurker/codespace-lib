@@ -23,3 +23,14 @@ export const getClientByPhone = async (phoneNumber) => {
     })
     return client;
 }
+export const getClientById = async (id) => {
+    try {
+        const client = await Client.findById(id);
+        if (!client)
+            return null;
+        return client;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
+};

@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const accessMapSchema = new mongoose.Schema({
     documentId : {
         type : mongoose.Schema.Types.ObjectId,
-        ref : 'User',
+        ref : 'Document',
         required : true,
         unique : true
     },
@@ -15,7 +15,7 @@ const accessMapSchema = new mongoose.Schema({
             },
             role : {
                 type :String,
-                enum : ['viewer','editor'],
+                enum : ['viewer','editor','owner'],
                 default : 'viewer'
             }
         },

@@ -1,35 +1,35 @@
 import mongoose from "mongoose";
-const docSchema = new mongoose.Schema({
 
-    name:{
-        type:String,
-        default:"Untitled"
+const docSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        default: "Untitled"
     },
-    description:{
-        type:String,
-        default:""
-    },// this field cannot be created during doc creation only updated later
-    content:{
-        type:String,
-        default:""
+    description: {
+        type: String,
+        default: ""
     },
-    owner:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:'Client',
-        required:true
+    content: {
+        type: String,
+        default: ""
     },
-    ownerName : {
-        type :String,
-        required :true
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Client',
+        required: true
     },
-    accessMap : {
-        type : mongoose.Schema.Types.ObjectId,
-        ref : 'AccessMap',
-        //for now required is false
+    ownerName: {
+        type: String,
+        required: true
+    },
+    accessMap: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'AccessMap',
+        required: true
     }
-},{
-    timestamps:true
+}, {
+    timestamps: true
 });
 
-const Document = mongoose.model("Document",docSchema);
+const Document = mongoose.model("Document", docSchema);
 export default Document;

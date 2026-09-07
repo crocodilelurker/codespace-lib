@@ -1,13 +1,22 @@
 import Document from "../models/Document.js";
+import AccessMap from "../models/AccessMap.js";
+import { createMap } from "./access.service.js";
+import mongoose from "mongoose";
 
-export const createDoc = async (username, docName, userId) => {
+export const createDoc = async (username, docName, userId, publicAccess = false) => {
     try {
+        const docId = new mongoose.Types.ObjectId();
+        const newMap = await createMap(docId, userId, publicAccess);
+        if (!newMap) {
+            return null;
+        }
         const newDoc = new Document({
+            _id: docId,
             name: docName,
             ownerName: username,
-            owner: userId
+            owner: userId,
+            accessMap: newMap._id
         });
-        // we need to create an AccessMap
         await newDoc.save();
         return newDoc;
     }
@@ -21,7 +30,7 @@ export const getDocByUser = async (userId) => {
     try {
         const docs = await Document.find({
             owner: userId
-        });
+        }).populate("accessMap");
         return docs;
     }
     catch (error) {
@@ -29,9 +38,10 @@ export const getDocByUser = async (userId) => {
         return null;
     }
 };
+
 export const getDocById = async (docId) => {
     try {
-        const doc = await Document.findById(docId);
+        const doc = await Document.findById(docId).populate("accessMap");
         return doc;
     }
     catch (error) {
@@ -42,7 +52,7 @@ export const getDocById = async (docId) => {
 
 export const deleteDoc = async (doc) => {
     try {
-        // we are sure that the doc exists and the user is the owner of the doc
+        await AccessMap.findOneAndDelete({ documentId: doc._id });
         await doc.deleteOne();
         return true;
     }
@@ -54,8 +64,6 @@ export const deleteDoc = async (doc) => {
 
 export const updateDoc = async (doc, name, description, content) => {
     try {
-        //from frontend i will send all these 3 for sure 
-        //no need to check
         doc.name = name;
         doc.description = description;
         doc.content = content;
@@ -66,4 +74,4 @@ export const updateDoc = async (doc, name, description, content) => {
         console.log(error);
         return null;
     }
-}
+};
