@@ -90,3 +90,11 @@ export const updateCol = async (mapFound, userid, role) => {
         return null;
     }
 };
+export const getMapById = async(mapid) => {
+    const mapExists = await AccessMap.findById(mapid);
+    if(mapExists)
+    {
+        return mapExists;
+    }
+    return null;
+}

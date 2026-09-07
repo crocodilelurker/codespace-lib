@@ -64,8 +64,11 @@ export const deleteDoc = async (doc) => {
 
 export const updateDoc = async (doc, name, description, content) => {
     try {
+        if(name != undefined)
         doc.name = name;
+        if(description != undefined)
         doc.description = description;
+        if(content != undefined)
         doc.content = content;
         await doc.save();
         return doc;
