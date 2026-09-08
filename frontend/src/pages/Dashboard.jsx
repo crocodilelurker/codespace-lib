@@ -7,6 +7,7 @@ import { DocCard } from '../components/DocCard'
 import { CreateDocDialog } from '../components/CreateDocDialog'
 import { EditDocDialog } from '../components/EditDocDialog'
 import { Spinner } from '../components/Spinner'
+import { copyToClipboard } from '../lib/utils'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -20,11 +21,13 @@ export default function Dashboard() {
 
   const userId = user?.id || user?._id
 
-  const handleCopyId = () => {
+  const handleCopyId = async () => {
     if (!userId) return
-    navigator.clipboard.writeText(userId)
-    setCopiedId(true)
-    setTimeout(() => setCopiedId(false), 2000)
+    const ok = await copyToClipboard(userId)
+    if (ok) {
+      setCopiedId(true)
+      setTimeout(() => setCopiedId(false), 2000)
+    }
   }
 
   const load = useCallback(async () => {

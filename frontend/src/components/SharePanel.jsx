@@ -3,6 +3,7 @@ import { X, UserPlus, Trash2, ChevronDown, Link, Check, UserCheck } from 'lucide
 import { getAccessMap, addCollaborator, removeCollaborator, updateCollaborator } from '../api/access'
 import { getUserById } from '../api/auth'
 import { Spinner } from './Spinner'
+import { copyToClipboard } from '../lib/utils'
 
 function RoleSelect({ value, onChange, disabled }) {
   return (
@@ -52,11 +53,13 @@ export function SharePanel({ docId, onClose }) {
   const [copiedLink, setCopiedLink] = useState(false)
   const [confirmUser, setConfirmUser] = useState(null)
 
-  const handleCopyLink = () => {
+  const handleCopyLink = async () => {
     const url = `${window.location.origin}/editor/${docId}`
-    navigator.clipboard.writeText(url)
-    setCopiedLink(true)
-    setTimeout(() => setCopiedLink(false), 2000)
+    const ok = await copyToClipboard(url)
+    if (ok) {
+      setCopiedLink(true)
+      setTimeout(() => setCopiedLink(false), 2000)
+    }
   }
 
   const load = useCallback(async () => {
