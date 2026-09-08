@@ -13,6 +13,10 @@ const docSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    yjsState: {
+        type: Buffer,
+        default: null
+    },
     owner: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Client',

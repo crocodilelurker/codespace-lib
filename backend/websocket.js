@@ -29,7 +29,10 @@ async function getOrCreateRoom(roomid) {
             const doc = new Y.Doc();
             const existingDoc = await getDocById(roomid);
             const awareness = new awarenessProtocol.Awareness(doc);
-            if (existingDoc?.content) {
+            if (existingDoc?.yjsState) {
+                Y.applyUpdate(doc, new Uint8Array(existingDoc.yjsState));
+                console.log("hydrated the doc from yjsState binary in database");
+            } else if (existingDoc?.content) {
                 const ytext = doc.getText("monaco");
                 ytext.insert(0, existingDoc.content);
                 console.log("hydrated the doc from database");
@@ -59,10 +62,11 @@ async function getOrCreateRoom(roomid) {
                 clearTimeout(room.saveTimeout);
                 room.saveTimeout = setTimeout(async () => {
                     const currentText = doc.getText("monaco").toString();
+                    const stateBuffer = Buffer.from(Y.encodeStateAsUpdate(doc));
                     try {
                         const d = await getDocById(roomid);
                         if (d) {
-                            const saveResult = await updateDoc(d, undefined, undefined, currentText);
+                            const saveResult = await updateDoc(d, undefined, undefined, currentText, stateBuffer);
                             if (saveResult)
                                 console.log("doc saved");
                         }
@@ -236,10 +240,11 @@ export const initWebSocket = async (server) => {
             if (room.clients.size === 0) {
                 clearTimeout(room.saveTimeout);
                 const currentText = room.doc.getText("monaco").toString();
+                const stateBuffer = Buffer.from(Y.encodeStateAsUpdate(room.doc));
                 try {
                     const doc = await getDocById(roomid);
                     if (doc) {
-                        const saveResult = await updateDoc(doc, undefined, undefined, currentText);
+                        const saveResult = await updateDoc(doc, undefined, undefined, currentText, stateBuffer);
                         if (saveResult)
                             console.log("doc saved");
                     }
