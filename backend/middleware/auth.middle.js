@@ -19,7 +19,6 @@ export const docOwnerMiddleware = async (req, res, next) => {
     try {
         const { id } = req.params;
         const user = req.user;
-        // fetch doc and the check the doc owner field and compare whether they are equal or not
         let doc = await getDocById(id);
         if (!doc) {
             return response(res, 404, "Doc not found", null);
@@ -34,4 +33,38 @@ export const docOwnerMiddleware = async (req, res, next) => {
         console.log(error);
         return response(res, 500, "internal server error or doc id parser", null);
     }
-}
+};
+
+export const docWriteMiddleware = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const user = req.user;
+        let doc = await getDocById(id);
+        if (!doc) {
+            return response(res, 404, "Doc not found", null);
+        }
+
+        const isOwner = doc.owner.equals(user.id);
+        let isEditor = false;
+
+        if (doc.accessMap && doc.accessMap.collaborators) {
+            const col = doc.accessMap.collaborators.find((c) => {
+                const colId = c.userid?._id ? c.userid._id.toString() : c.userid?.toString();
+                return colId === user.id.toString() && (c.role === 'editor' || c.role === 'owner');
+            });
+            if (col) isEditor = true;
+        }
+
+        if (!isOwner && !isEditor) {
+            return response(res, 403, "Forbidden - write permission required", null);
+        }
+
+        req.doc = doc;
+        req.isOwner = isOwner;
+        next();
+    }
+    catch (error) {
+        console.log(error);
+        return response(res, 500, "internal server error or doc id parser", null);
+    }
+};

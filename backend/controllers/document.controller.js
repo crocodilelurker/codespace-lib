@@ -27,9 +27,9 @@ export const getDocumentById = async (req, res) => {
 };
 
 export const updateDocument = async (req, res) => {
-    const { name, description, content } = req.body;
+    const { name, description, content, language } = req.body;
     let doc = req.doc;
-    const updatedDoc = await updateDoc(doc, name, description, content);
+    const updatedDoc = await updateDoc(doc, name, description, content, undefined, language);
     if (!updatedDoc) {
         return response(res, 500, "Error in updating doc controller", null);
     }

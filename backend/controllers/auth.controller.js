@@ -116,4 +116,24 @@ export const refresh = async (req, res) => {
         console.log("error in refresh controller", error);
         return response(res, 500, "ISE refresh", null);
     }
-}
+};
+
+export const getUserById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return response(res, 400, "User ID is required", null);
+        }
+        const client = await Client.findById(id).select("name email _id");
+        if (!client) {
+            return response(res, 404, "User not found", null);
+        }
+        return response(res, 200, "User found", {
+            id: client._id,
+            name: client.name,
+            email: client.email
+        });
+    } catch (error) {
+        return response(res, 404, "User not found", null);
+    }
+};

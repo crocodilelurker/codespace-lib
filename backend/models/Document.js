@@ -13,6 +13,10 @@ const docSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    language: {
+        type: String,
+        default: "plaintext"
+    },
     yjsState: {
         type: Buffer,
         default: null

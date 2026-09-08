@@ -29,13 +29,21 @@ async function getOrCreateRoom(roomid) {
             const doc = new Y.Doc();
             const existingDoc = await getDocById(roomid);
             const awareness = new awarenessProtocol.Awareness(doc);
-            if (existingDoc?.yjsState) {
+            if (existingDoc?.yjsState && existingDoc.yjsState.length > 0) {
                 Y.applyUpdate(doc, new Uint8Array(existingDoc.yjsState));
                 console.log("hydrated the doc from yjsState binary in database");
-            } else if (existingDoc?.content) {
+            }
+            if (doc.getText("monaco").toString().length === 0 && existingDoc?.content) {
                 const ytext = doc.getText("monaco");
                 ytext.insert(0, existingDoc.content);
-                console.log("hydrated the doc from database");
+                console.log("hydrated the doc from database content");
+            }
+
+            if (existingDoc?.language) {
+                const metaMap = doc.getMap("meta");
+                if (!metaMap.get("language")) {
+                    metaMap.set("language", existingDoc.language);
+                }
             }
 
             const room = {
@@ -63,10 +71,11 @@ async function getOrCreateRoom(roomid) {
                 room.saveTimeout = setTimeout(async () => {
                     const currentText = doc.getText("monaco").toString();
                     const stateBuffer = Buffer.from(Y.encodeStateAsUpdate(doc));
+                    const currentLang = doc.getMap("meta").get("language") || undefined;
                     try {
                         const d = await getDocById(roomid);
                         if (d) {
-                            const saveResult = await updateDoc(d, undefined, undefined, currentText, stateBuffer);
+                            const saveResult = await updateDoc(d, undefined, undefined, currentText, stateBuffer, currentLang);
                             if (saveResult)
                                 console.log("doc saved");
                         }
@@ -114,17 +123,21 @@ export const initWebSocket = async (server) => {
         console.log(`New Connection establish by ${clientIp}`);
 
         const url = new URL(request.url, `http://${request.headers.host}`);
-        const roomid = url.searchParams.get('room');
+        const roomid = url.searchParams.get('room') || url.pathname.replace(/^\//, '');
         const token = url.searchParams.get('token');
         if (!token || !roomid) {
-            socket.close(4003, 'field undefined');
+            socket.close(4401, 'field undefined');
             return;
         }
 
-        // Verify user authentication and permissions
+        const pendingMessages = [];
+        const bufferMessage = (message, isBinary) => pendingMessages.push({ message, isBinary });
+        socket.on('message', bufferMessage);
+
         const result = await userAllowed(roomid, token);
         if (!result || !result.isAllowed) {
-            socket.close(4003, result?.error || 'Access denied');
+            socket.off('message', bufferMessage);
+            socket.close(4401, result?.error || 'Access denied');
             return;
         }
 
@@ -132,7 +145,6 @@ export const initWebSocket = async (server) => {
         room.clients.add(socket);
         console.log(`Client joined room ${roomid} (role: ${result.role || 'viewer'}, write: ${result.ableToWrite})`);
 
-        // Track clientIDs associated with this connection for awareness cleanup
         const socketClientIDs = new Set();
         const awarenessChangeHandler = ({ added, updated, removed }, origin) => {
             if (origin === socket) {
@@ -143,33 +155,23 @@ export const initWebSocket = async (server) => {
         };
         room.awareness.on('change', awarenessChangeHandler);
 
-        // 1. Send SyncStep 1 to client so client replies with any missing state
-        const encoderSync = encoding.createEncoder();
-        encoding.writeVarUint(encoderSync, messageSync);
-        syncProtocol.writeSyncStep1(encoderSync, room.doc);
-        socket.send(encoding.toUint8Array(encoderSync));
-
-        // 2. Send current awareness states if any exist
-        const awarenessStates = room.awareness.getStates();
-        if (awarenessStates.size > 0) {
-            const encoderAwareness = encoding.createEncoder();
-            encoding.writeVarUint(encoderAwareness, messageAwareness);
-            encoding.writeVarUint8Array(
-                encoderAwareness,
-                awarenessProtocol.encodeAwarenessUpdate(
-                    room.awareness,
-                    Array.from(awarenessStates.keys())
-                )
-            );
-            socket.send(encoding.toUint8Array(encoderAwareness));
-        }
-
-        socket.on('message', (message, isBinary) => {
-            if (!isBinary || !message || message.length < 1)
+        const handleMessage = (message, isBinary) => {
+            if (isBinary === false && typeof message === 'string') {
                 return null;
+            }
+            if (!message || message.length < 1) {
+                return null;
+            }
 
             try {
-                const raw = new Uint8Array(message);
+                let raw;
+                if (message instanceof Uint8Array) {
+                    raw = new Uint8Array(message.buffer, message.byteOffset, message.byteLength);
+                } else if (message instanceof ArrayBuffer) {
+                    raw = new Uint8Array(message);
+                } else {
+                    raw = new Uint8Array(Buffer.from(message));
+                }
                 const decoder = decoding.createDecoder(raw);
                 const encoder = encoding.createEncoder();
                 const messageType = decoding.readVarUint(decoder);
@@ -179,7 +181,6 @@ export const initWebSocket = async (server) => {
                         encoding.writeVarUint(encoder, messageSync);
                         const syncMessageType = decoding.peekVarUint(decoder);
 
-                        // Block write updates if user only has viewer permissions
                         if (syncMessageType !== syncProtocol.messageYjsSyncStep1 && !result.ableToWrite) {
                             console.warn(`Write denied for user in room ${roomid}`);
                             break;
@@ -187,7 +188,6 @@ export const initWebSocket = async (server) => {
 
                         syncProtocol.readSyncMessage(decoder, encoder, room.doc, socket);
 
-                        // If readSyncMessage produced a reply (e.g. SyncStep2 in response to SyncStep1)
                         if (encoding.length(encoder) > 1) {
                             socket.send(encoding.toUint8Array(encoder));
                         }
@@ -219,16 +219,40 @@ export const initWebSocket = async (server) => {
                 }
             } catch (error) {
                 console.error("Error processing message:", error);
-                return null;
             }
-        });
+        };
+
+        socket.off('message', bufferMessage);
+        socket.on('message', handleMessage);
+
+        const encoderSync = encoding.createEncoder();
+        encoding.writeVarUint(encoderSync, messageSync);
+        syncProtocol.writeSyncStep1(encoderSync, room.doc);
+        socket.send(encoding.toUint8Array(encoderSync));
+
+        const awarenessStates = room.awareness.getStates();
+        if (awarenessStates.size > 0) {
+            const encoderAwareness = encoding.createEncoder();
+            encoding.writeVarUint(encoderAwareness, messageAwareness);
+            encoding.writeVarUint8Array(
+                encoderAwareness,
+                awarenessProtocol.encodeAwarenessUpdate(
+                    room.awareness,
+                    Array.from(awarenessStates.keys())
+                )
+            );
+            socket.send(encoding.toUint8Array(encoderAwareness));
+        }
+
+        for (const { message, isBinary } of pendingMessages) {
+            handleMessage(message, isBinary);
+        }
 
         socket.on('close', async () => {
             room.clients.delete(socket);
             room.awareness.off('change', awarenessChangeHandler);
             console.log('client dced');
 
-            // Clean up presence/cursor on remote clients
             if (socketClientIDs.size > 0) {
                 awarenessProtocol.removeAwarenessStates(
                     room.awareness,
@@ -241,10 +265,11 @@ export const initWebSocket = async (server) => {
                 clearTimeout(room.saveTimeout);
                 const currentText = room.doc.getText("monaco").toString();
                 const stateBuffer = Buffer.from(Y.encodeStateAsUpdate(room.doc));
+                const currentLang = room.doc.getMap("meta").get("language") || undefined;
                 try {
                     const doc = await getDocById(roomid);
                     if (doc) {
-                        const saveResult = await updateDoc(doc, undefined, undefined, currentText, stateBuffer);
+                        const saveResult = await updateDoc(doc, undefined, undefined, currentText, stateBuffer, currentLang);
                         if (saveResult)
                             console.log("doc saved");
                     }
@@ -252,7 +277,6 @@ export const initWebSocket = async (server) => {
                     console.error("Error while saving to db", error);
                 }
 
-                // Check again to ensure no new client connected while the db save was pending
                 if (room.clients.size === 0) {
                     room.awareness.destroy();
                     room.doc.destroy();
@@ -263,7 +287,7 @@ export const initWebSocket = async (server) => {
         });
 
         socket.on('error', (err) => {
-            console.error('error in file', err);
+            console.error('WebSocket error:', err);
         });
     });
     return wss;
