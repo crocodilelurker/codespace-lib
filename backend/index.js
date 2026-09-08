@@ -1,5 +1,6 @@
 import "dotenv/config";
 
+import cors from "cors";
 import express from "express";
 import http from "http";
 import cookieParser from "cookie-parser";
@@ -15,6 +16,10 @@ const PORT = process.env.PORT || 8001;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
 
 connectDb();
 
