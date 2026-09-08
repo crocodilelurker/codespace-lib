@@ -82,7 +82,9 @@ export function useCollabEditor({ docId, accessToken, user, onLanguageChange }) 
     const ydoc = new Y.Doc()
     ydocRef.current = ydoc
 
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000'
+    const defaultWsProto = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const defaultWsHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+    const wsUrl = import.meta.env.VITE_WS_URL || `${defaultWsProto}//${defaultWsHost}:8000`
     const provider = new WebsocketProvider(
       wsUrl,
       '',
