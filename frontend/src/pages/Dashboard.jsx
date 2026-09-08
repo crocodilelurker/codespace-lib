@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, LogOut, Copy, Check } from 'lucide-react'
+import { Plus, LogOut } from 'lucide-react'
 import { getMyDocs } from '../api/document'
 import { useAuthStore } from '../store/auth.store'
 import { DocCard } from '../components/DocCard'
 import { CreateDocDialog } from '../components/CreateDocDialog'
 import { EditDocDialog } from '../components/EditDocDialog'
 import { Spinner } from '../components/Spinner'
-import { copyToClipboard } from '../lib/utils'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -16,19 +15,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [editingDoc, setEditingDoc] = useState(null)
-  const [copiedId, setCopiedId] = useState(false)
   const [tab, setTab] = useState('all')
 
   const userId = user?.id || user?._id
-
-  const handleCopyId = async () => {
-    if (!userId) return
-    const ok = await copyToClipboard(userId)
-    if (ok) {
-      setCopiedId(true)
-      setTimeout(() => setCopiedId(false), 2000)
-    }
-  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -94,31 +83,34 @@ export default function Dashboard() {
         <span style={{ fontSize: '1.05rem', fontWeight: 500, color: 'var(--text)', letterSpacing: '-0.01em' }}>ditchdocs</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {userId && (
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={handleCopyId}
-              title="Copy your user ID to share with collaborators"
+            <div
+              title="Your User ID (select to copy)"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 7,
                 fontSize: '0.8125rem',
-                padding: '5px 10px',
+                padding: '5px 12px',
                 borderRadius: 6,
                 background: 'var(--surface-2)',
                 border: '1px solid var(--border)',
+                userSelect: 'all',
+                cursor: 'text',
               }}
             >
-              <span style={{ color: 'var(--subtext-2)' }}>id:</span>
-              <span style={{ color: 'var(--subtext)', fontFamily: 'monospace' }}>
-                {userId.slice(0, 6)}...{userId.slice(-4)}
+              <span style={{ color: 'var(--subtext-2)', fontSize: '0.75rem' }}>id:</span>
+              <span
+                style={{
+                  color: 'var(--text)',
+                  fontFamily: 'monospace',
+                  userSelect: 'all',
+                  fontWeight: 500,
+                  letterSpacing: '0.02em',
+                }}
+              >
+                {userId}
               </span>
-              {copiedId ? (
-                <Check size={13} style={{ color: 'var(--accent)' }} />
-              ) : (
-                <Copy size={13} style={{ color: 'var(--subtext)' }} />
-              )}
-            </button>
+            </div>
           )}
           {user?.name && (
             <span style={{ fontSize: '0.9375rem', color: 'var(--subtext)' }}>{user.name}</span>
