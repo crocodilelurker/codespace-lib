@@ -11,7 +11,7 @@ import accessRoutes from "./routes/access.routes.js";
 import connectDb from "./config/db.js";
 import { initWebSocket } from "./websocket.js";
 const app = express();
-const PORT = process.env.PORT || 8001;
+const PORT = process.env.PORT || 8000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
